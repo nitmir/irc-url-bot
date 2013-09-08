@@ -97,7 +97,7 @@ class UrlBot(object):
                     self.say(u'nickserv',u'IDENTIFY %s' % nickserv_pass)
                     time.sleep(0.5)
                for chan in self.chans:
-                 print("Join %s" % chan)
+                 print(u"Join %r" % chan)
                  self.send (u'JOIN %s' % chan )
             elif code=='433': # Nickname is already in use
               if not connected:
@@ -108,7 +108,7 @@ class UrlBot(object):
               chan=data.split(':',2)[2].strip()
               print("Invited on %s." % chan)
               if chan.lower() in [ chan.lower().split(' ', 1)[0].strip() for chan in self.chans]:
-                print("Join %s" % chan)
+                print(u"Join %r" % chan)
                 self.send (u'JOIN %s' % chan )
             elif code=='PRIVMSG':
                 dest=data_split[2]
@@ -117,6 +117,7 @@ class UrlBot(object):
                     to=dest
                 else:
                     to=src
+                to=unicode(to, self.charset)
                     
                 for url in re.findall(self.url_regexp, data):
                     url=url[0]
