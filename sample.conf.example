@@ -1,0 +1,15 @@
+params = {
+# IRC configuration
+'network':'irc.example.net',
+#'port':6667,
+'chans':["#channel"],
+'nick':"urlbot",
+#'irc_timeout':360.0,
+#'nickserv_pass':None,
+
+# Misc
+#'debug':0,
+#'charset':'utf-8',
+}
+
+

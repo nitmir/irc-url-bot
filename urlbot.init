@@ -1,0 +1,137 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          urlbot
+# Required-Start:    $remote_fs $network $syslog $named
+# Required-Stop:     $remote_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Irc mail urlbot
+### END INIT INFO
+
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License version 2 for
+# more details.
+#
+# You should have received a copy of the GNU General Public License version 2
+# along with this program; if not, write to the Free Software Foundation, Inc., 51
+# Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+DAEMON="/usr/local/bin/urlbot"
+NAME="urlbot"
+DESC="Irc mail urlbot"
+PID_DIR="/var/run/$NAME"
+CONF_DIR="/etc/$NAME"
+USER="urlbot"
+ARGS="--confdir $CONF_DIR"
+
+[ -x $DAEMON ] || exit 0
+
+. /lib/lsb/init-functions
+
+urlbot_stoped(){
+  CONF=$1
+  if [ -f $PID_DIR/$CONF.pid ]; then
+    pid=`cat $PID_DIR/$CONF.pid`
+    if [ `ps -p $pid | wc -l` -eq 2 ]; then
+      return 1
+    fi
+  fi
+  return 0
+}
+
+urlbot_start(){
+ CONF=$1
+ if $(urlbot_stoped $CONF); then
+  log_daemon_msg "Starting $DESC $CONF"
+  mkdir -p $PID_DIR
+  /sbin/start-stop-daemon --start --pidfile $PID_DIR/$CONF.pid --user $USER --group $USER -b --make-pidfile --chuid $USER --exec $DAEMON -- $ARGS $CONF.conf
+ else
+  log_failure_msg "$CONF already running"
+ fi
+}
+
+urlbot_stop(){
+ CONF=$1
+ if $(urlbot_stoped $CONF); then
+  log_warning_msg "$CONF not running"
+ else
+  /sbin/start-stop-daemon --stop --pidfile $PID_DIR/$CONF.pid --verbose --retry 30
+ fi
+}
+
+start(){
+    if test -z "$2" ; then
+      for CONF_FILE in `cd $CONF_DIR; ls *.conf 2> /dev/null`; do
+        CONF=${CONF_FILE%%.conf}
+        urlbot_start $CONF
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        CONF=$1
+        if test -e $CONF_DIR/$CONF.conf ; then
+            urlbot_start $CONF
+        else
+          log_failure_msg "missing $CONF_DIR/$CONF.conf"
+        fi
+      done
+    fi
+}
+
+stop(){
+    if test -z "$2" ; then
+      for CONF_FILE in `cd $CONF_DIR; ls *.conf 2> /dev/null`; do
+        CONF=${CONF_FILE%%.conf}
+        urlbot_stop $CONF
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        CONF=$1
+        if test -e $CONF_DIR/$CONF.conf ; then
+          urlbot_stop $CONF
+        else
+          log_failure_msg "missing $CONF_DIR/$CONF.conf"
+        fi
+      done
+    fi
+}
+status(){
+    if test -z "$2" ; then
+      for CONF_FILE in `cd $CONF_DIR; ls *.conf 2> /dev/null`; do
+        CONF=${CONF_FILE%%.conf}
+        status_of_proc -p "$PID_DIR/$CONF.pid" "$NAME" "$DESC $CONF"
+      done
+    else
+      while shift ; do
+        [ -z "$1" ] && break
+        CONF=$1
+        status_of_proc -p "$PID_DIR/$CONF.pid" "$NAME" "$DESC $CONF"
+      done
+    fi
+}
+
+case $1 in
+  start) start $@
+  ;;
+  stop) stop $@
+  ;;
+  restart)
+    stop $@
+    start $@
+  ;;
+  force-reload)
+    stop $@
+    start $@
+  ;;
+  status)
+    status $@
+  ;;
+  *)
+   echo "Usage: $0 {start|stop|restart|force-reload|status} [`cd $CONF_DIR; ls -m *.conf 2> /dev/null | sed 's/\.conf//g;s/, /|/g'`]" >&2
+   exit 1
+  ;;
+esac
+
+exit 0
