@@ -34,25 +34,27 @@ class Sender(object):
     return self.thread.is_alive()
     
   def process(self):
+    while time.time() < self.at_time:
+        time.sleep(1)
+    print "process %r" % self.url
     soup = BeautifulSoup(urllib2.urlopen(self.url).read(self.urlbot.max_page_size))
     if len(soup.title.string) > self.urlbot.title_length:
         title=soup.title.string[0:self.urlbot.title_length] + u'…'
     else:
         title=soup.title.string
-    while time.time() < self.at_time:
-        time.sleep(1)
     self.urlbot.say(self.to, title)
 
 
 
 class UrlBot(object):
-  def __init__(self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576, irc_timeout=360.0, charset='utf-8', nickserv_pass=None):
+  def __init__(self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576, irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None):
     self.chans=chans
     self.nick=nick
     self.title_length=title_length
     self.max_page_size=max_page_size
     nick_int=0
     nick_bool=False
+    nick_next=0
     connected=False
     self.charset=charset
     self.irc=None
@@ -60,6 +62,7 @@ class UrlBot(object):
     self.M=None
     self.debug=debug
     self.last_message=0
+    self.message_delay=message_delay
     
     self.url_regexp=re.compile("""((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""")
     
@@ -104,6 +107,8 @@ class UrlBot(object):
               if not connected:
                 self.send ( u'NICK %s%s' % (nick,nick_int) )
                 nick_int+=1
+              else:
+                  nick_next=time.time() + 10
               nick_bool=True
             elif code=='INVITE':
               chan=data.split(':',2)[2].strip()
@@ -125,12 +130,12 @@ class UrlBot(object):
                     if not url.startswith('http'):
                         url='http://'+url
                     Sender(self, to, url, self.last_message).start()
-                    self.last_message = time.time() + 2
+                    self.last_message = max(time.time(), self.last_message) + self.message_delay
 
 
 
             if connected:
-              if nick_bool:
+              if nick_bool and time.time() > nick_next:
                 self.send ( u'NICK %s' % nick )
                 nick_bool=False
                 
