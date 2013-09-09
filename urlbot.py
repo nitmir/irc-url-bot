@@ -147,15 +147,15 @@ class UrlBot(object):
 
   def say(self,chan,str):
     msg=u'PRIVMSG %s :%s\r\n' % (chan,str)
-    if self.debug!=0: print(msg)
+    if self.debug!=0: print(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   def notice(self,chan,str):
     msg=u'NOTICE %s :%s\r\n' % (chan,str)
-    if self.debug!=0: print(msg)
+    if self.debug!=0: print(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   def send(self,str):
     msg=u'%s\r\n' % (str)
-    if self.debug!=0: print(msg)
+    if self.debug!=0: print(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   
 
