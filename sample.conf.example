@@ -11,6 +11,6 @@ params = {
 # Misc
 #'debug':0,
 #'charset':'utf-8',
+#'max_page_size': 1048576, # by default fetch only the first Mo of a page
+#'title_length': 300, # by default, only display the first 300 char of a page title
 }
-
-

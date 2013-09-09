@@ -34,7 +34,7 @@ class Sender(object):
     return self.thread.is_alive()
     
   def process(self):
-    soup = BeautifulSoup(urllib2.urlopen(self.url))
+    soup = BeautifulSoup(urllib2.urlopen(self.url).read(self.urlbot.max_page_size))
     if len(soup.title.string) > self.urlbot.title_length:
         title=soup.title.string[0:self.urlbot.title_length] + u'…'
     else:
@@ -46,10 +46,11 @@ class Sender(object):
 
 
 class UrlBot(object):
-  def __init__(self, network, chans, nick, port=6667, debug=0, title_length=300, irc_timeout=360.0, charset='utf-8', nickserv_pass=None):
+  def __init__(self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576, irc_timeout=360.0, charset='utf-8', nickserv_pass=None):
     self.chans=chans
     self.nick=nick
     self.title_length=title_length
+    self.max_page_size=max_page_size
     nick_int=0
     nick_bool=False
     connected=False
@@ -112,7 +113,7 @@ class UrlBot(object):
                 self.send (u'JOIN %s' % chan )
             elif code=='PRIVMSG':
                 dest=data_split[2]
-                src=data_split[0].split('!', 1)[1:]
+                src=data_split[0].split('!', 1)[0][1:]
                 if dest.startswith('#'):
                     to=dest
                 else:
