@@ -42,7 +42,7 @@ class Sender(object):
         title=soup.title.string[0:self.urlbot.title_length] + u'…'
     else:
         title=soup.title.string
-    self.urlbot.say(self.to, title)
+    self.urlbot.say(self.to, title.replace('\n', ' ').strip())
 
 
 
