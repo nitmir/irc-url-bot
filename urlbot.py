@@ -13,8 +13,22 @@ import socket
 import time
 import re
 import urllib2
+import htmlentitydefs
 from threading import *
 from BeautifulSoup import BeautifulSoup
+
+html_pattern = re.compile("&(\w+?);")
+
+def html_entity_decode_char(m, defs=htmlentitydefs.entitydefs):
+    try:
+        return defs[m.group(1)]
+    except KeyError:
+        return m.group(0)
+
+def html_entity_decode(string):
+    return html_pattern.sub(html_entity_decode_char, string)
+
+
 
 class Sender(object):
   def __init__(self, urlbot, to, url, at_time):
@@ -42,7 +56,7 @@ class Sender(object):
         title=soup.title.string[0:self.urlbot.title_length] + u'…'
     else:
         title=soup.title.string
-    self.urlbot.say(self.to, title.replace('\n', ' ').strip())
+    self.urlbot.say(self.to, html_entity_decode(title.replace('\n', ' ').strip()))
 
 
 
