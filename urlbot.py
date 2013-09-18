@@ -19,9 +19,9 @@ from BeautifulSoup import BeautifulSoup
 
 html_pattern = re.compile("&(\w+?);")
 
-def html_entity_decode_char(m, defs=htmlentitydefs.entitydefs):
+def html_entity_decode_char(m):
     try:
-        return defs[m.group(1)]
+        return unicode(htmlentitydefs.entitydefs[m.group(1)], "latin1")
     except KeyError:
         return m.group(0)
 
