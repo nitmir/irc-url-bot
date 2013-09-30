@@ -126,7 +126,7 @@ class UrlBot(object):
                   nick_next=time.time() + 10
               nick_bool=True
             elif code=='INVITE':
-              chan=data.split(':',2)[2].strip()
+              chan=unicode(data.split(':',2)[2].strip(), self.charset)
               print("Invited on %s." % chan)
               if chan.lower() in [ chan.lower().split(' ', 1)[0].strip() for chan in self.chans]:
                 print(u"Join %r" % chan)
@@ -158,6 +158,7 @@ class UrlBot(object):
         if self.irc:
             try: self.irc.close()
             except: pass
+        connected=False
         time.sleep(2)
 
   def say(self,chan,str):
