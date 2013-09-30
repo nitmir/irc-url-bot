@@ -18,6 +18,7 @@ from threading import *
 from BeautifulSoup import BeautifulSoup
 
 html_pattern = re.compile("&(\w+?);")
+html_pattern2 = re.compile("&#([0-9]+);")
 
 def html_entity_decode_char(m):
     try:
@@ -26,7 +27,7 @@ def html_entity_decode_char(m):
         return m.group(0)
 
 def html_entity_decode(string):
-    return html_pattern.sub(html_entity_decode_char, string)
+    return html_pattern2.sub(lambda x: unichr(int(x.group(1))), html_pattern.sub(html_entity_decode_char, string))
 
 
 
