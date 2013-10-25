@@ -16,9 +16,20 @@ import urllib2
 import htmlentitydefs
 from threading import *
 from BeautifulSoup import BeautifulSoup
+import os
+import sys
+import datetime
+
 
 html_pattern = re.compile("&(\w+?);")
 html_pattern2 = re.compile("&#([0-9]+);")
+
+def date():
+    return datetime.datetime.now().isoformat()
+
+def myprint(str):
+    print "%s: %s" % (date(), str)
+    sys.stdout.fileno()
 
 def html_entity_decode_char(m):
     try:
@@ -51,8 +62,14 @@ class Sender(object):
   def process(self):
     while time.time() < self.at_time:
         time.sleep(1)
-    print "process %r" % self.url
-    soup = BeautifulSoup(urllib2.urlopen(self.url).read(self.urlbot.max_page_size))
+    myprint("process %r" % self.url)
+    try:
+        soup = BeautifulSoup(urllib2.urlopen(self.url).read(self.urlbot.max_page_size))
+    except urllib2.HTTPError as e:
+        sys.stderr.write("HTTPError when fetching %s : %s\n" % (e.url, e))
+        return
+    if not soup.title:
+        return
     if len(soup.title.string) > self.urlbot.title_length:
         title=soup.title.string[0:self.urlbot.title_length] + u'…'
     else:
@@ -85,7 +102,7 @@ class UrlBot(object):
       try:
         self.irc = socket.socket ( socket.AF_INET, socket.SOCK_STREAM )
         self.irc.settimeout(irc_timeout)
-        print("Connection to irc")
+        myprint("Connection to irc")
         self.irc.connect ( ( network, port ) )
         #print(self.irc.recv ( 4096 ))
         self.send ( u'USER %s %s %s :Python IRC' % (nick,nick,nick) )
@@ -98,7 +115,7 @@ class UrlBot(object):
           for data in data:
             if self.debug!=0:
               try:
-                print(data)
+                myprint(data)
               except:
                 pass
             data_split=data.split(' ', 4)
@@ -116,7 +133,7 @@ class UrlBot(object):
                     self.say(u'nickserv',u'IDENTIFY %s' % nickserv_pass)
                     time.sleep(0.5)
                for chan in self.chans:
-                 print(u"Join %r" % chan)
+                 myprint(u"Join %r" % chan)
                  self.send (u'JOIN %s' % chan )
             elif code=='433': # Nickname is already in use
               if not connected:
@@ -127,25 +144,23 @@ class UrlBot(object):
               nick_bool=True
             elif code=='INVITE':
               chan=unicode(data.split(':',2)[2].strip(), self.charset)
-              print("Invited on %s." % chan)
+              myprint("Invited on %s." % chan)
               if chan.lower() in [ chan.lower().split(' ', 1)[0].strip() for chan in self.chans]:
-                print(u"Join %r" % chan)
+                myprint(u"Join %r" % chan)
                 self.send (u'JOIN %s' % chan )
             elif code=='PRIVMSG':
                 dest=data_split[2]
                 src=data_split[0].split('!', 1)[0][1:]
                 if dest.startswith('#'):
                     to=dest
-                else:
-                    to=src
-                to=unicode(to, self.charset)
+                    to=unicode(to, self.charset)
                     
-                for url in re.findall(self.url_regexp, data):
-                    url=url[0]
-                    if not url.startswith('http'):
-                        url='http://'+url
-                    Sender(self, to, url, self.last_message).start()
-                    self.last_message = max(time.time(), self.last_message) + self.message_delay
+                    for url in re.findall(self.url_regexp, data):
+                        url=url[0]
+                        if not url.startswith('http'):
+                            url='http://'+url
+                        Sender(self, to, url, self.last_message).start()
+                        self.last_message = max(time.time(), self.last_message) + self.message_delay
 
 
 
@@ -163,15 +178,15 @@ class UrlBot(object):
 
   def say(self,chan,str):
     msg=u'PRIVMSG %s :%s\r\n' % (chan,str)
-    if self.debug!=0: print(msg.encode(self.charset))
+    if self.debug!=0: myprint(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   def notice(self,chan,str):
     msg=u'NOTICE %s :%s\r\n' % (chan,str)
-    if self.debug!=0: print(msg.encode(self.charset))
+    if self.debug!=0: myprint(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   def send(self,str):
     msg=u'%s\r\n' % (str)
-    if self.debug!=0: print(msg.encode(self.charset))
+    if self.debug!=0: myprint(msg.encode(self.charset))
     self.irc.send (msg.encode(self.charset))
   
 
