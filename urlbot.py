@@ -68,7 +68,14 @@ class Sender(object):
         time.sleep(1)
     myprint("process %r" % self.url)
     try:
-        soup = BeautifulSoup(urllib2.urlopen(self.url).read(self.urlbot.max_page_size))
+        request = urllib2.urlopen(self.url)
+        if "Content-Type" in request.headers and "charset=" in request.headers["Content-Type"]:
+            charset = request.headers["Content-Type"].split("charset=")[1].split(";")[0].strip()
+            soup = BeautifulSoup(
+                request.read(self.urlbot.max_page_size).decode(charset, errors="ignore")
+            )
+        else:
+            soup = BeautifulSoup(request.read(self.urlbot.max_page_size))
     except urllib2.HTTPError as e:
         sys.stderr.write("HTTPError when fetching %s : %s\n" % (e.url, e))
         return
