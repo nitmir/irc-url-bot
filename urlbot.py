@@ -23,6 +23,7 @@ import datetime
 
 html_pattern = re.compile("&(\w+?);")
 html_pattern2 = re.compile("&#([0-9]+);")
+html_pattern3 = re.compile("&#[xX]([0-9a-fA-F]+);")
 
 def date():
     return datetime.datetime.now().isoformat()
@@ -38,7 +39,10 @@ def html_entity_decode_char(m):
         return m.group(0)
 
 def html_entity_decode(string):
-    return html_pattern2.sub(lambda x: unichr(int(x.group(1))), html_pattern.sub(html_entity_decode_char, string))
+    string = html_pattern.sub(html_entity_decode_char, string)
+    string = html_pattern2.sub(lambda x: unichr(int(x.group(1))), string)
+    string = html_pattern3.sub(lambda x: unichr(int(x.group(1), 16)), string)
+    return string
 
 
 
