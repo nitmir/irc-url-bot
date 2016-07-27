@@ -111,6 +111,10 @@ class UrlBot(object):
         self.debug = debug
         self.last_message = 0
         self.message_delay = message_delay
+        if blacklist is None:
+            self.blacklist = []
+        else:
+            self.blacklist = [re.compile(bl) for bl in blacklist]
 
         self.url_regexp = re.compile(
             """((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/"""
@@ -181,10 +185,11 @@ class UrlBot(object):
                                     url = url[0]
                                     if not url.startswith('http'):
                                         url = 'http://'+url
-                                    Sender(self, to, url, self.last_message).start()
-                                    self.last_message = (
-                                        max(time.time(), self.last_message) + self.message_delay
-                                    )
+                                    if not any(bl.match(url) for bl in self.blacklist):
+                                        Sender(self, to, url, self.last_message).start()
+                                        self.last_message = (
+                                            max(time.time(), self.last_message) + self.message_delay
+                                        )
 
                         if connected:
                             if nick_bool and time.time() > nick_next:
