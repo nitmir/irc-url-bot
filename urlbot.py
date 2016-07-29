@@ -19,6 +19,7 @@ from BeautifulSoup import BeautifulSoup
 import os
 import sys
 import datetime
+import ssl
 
 
 html_pattern = re.compile("&(\w+?);")
@@ -95,7 +96,7 @@ class UrlBot(object):
     def __init__(
       self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576,
       irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None,
-      ignore=None
+      ignore=None, cafile=None, tls=False
     ):
         self.chans = chans
         self.nick = nick
@@ -130,6 +131,9 @@ class UrlBot(object):
         while True:
             try:
                 self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                if tls is True:
+                    context = ssl.create_default_context(cafile=cafile)
+                    self.irc = context.wrap_socket(self.irc, server_hostname=network)
                 self.irc.settimeout(irc_timeout)
                 myprint("Connection to irc")
                 self.irc.connect((network, port))
