@@ -10,9 +10,16 @@ params = {
 
 # Misc
 #'debug':0,
-#'charset':'utf-8',
+#'charset':'utf-8', # charset of the IRC server
 #'max_page_size': 1048576, # by default fetch only the first Mo of a page
 #'title_length': 300, # by default, only display the first 300 char of a page title
-#'message_delay': 3, # seconds to wait before processing tow requests
-#'blacklist': ["https://.*"] # a list of regular expressions. Urlbot will ignore url matching any.
+#'message_delay': 3, # seconds to wait before processing next requests
+
+# A list of regular expressions. Urlbot will ignore url matching any.
+# regexpr special chars need to be escaped using \\.
+#'blacklist': ["https://.*", "https://www\\.youtube\\.com/.*"],
+
+# A list of regular expressions. Urlbot will ignore users matching any. Users are of the form
+# nick!username@host. regexpr special chars need to be escaped using \\.
+#'ignore':[".*@cransiam\\.24i\\.fioc3c\\.IP", "root!.*"],
 }

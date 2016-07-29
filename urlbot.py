@@ -94,7 +94,8 @@ class Sender(object):
 class UrlBot(object):
     def __init__(
       self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576,
-      irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None
+      irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None,
+      ignore=None
     ):
         self.chans = chans
         self.nick = nick
@@ -115,6 +116,10 @@ class UrlBot(object):
             self.blacklist = []
         else:
             self.blacklist = [re.compile(bl) for bl in blacklist]
+        if ignore is None:
+            self.ignore = []
+        else:
+            self.ignore = [re.compile(bl) for bl in ignore]
 
         self.url_regexp = re.compile(
             """((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/"""
@@ -176,20 +181,24 @@ class UrlBot(object):
                                 self.send(u'JOIN %s' % chan)
                         elif code == 'PRIVMSG':
                             dest = data_split[2]
-                            src = data_split[0].split('!', 1)[0][1:]
+                            src = data_split[0][1:]
                             if dest.startswith('#'):
-                                to = dest
-                                to = unicode(to, self.charset)
+                                if not any(bl.match(src) for bl in self.ignore):
+                                    to = dest
+                                    to = unicode(to, self.charset)
 
-                                for url in self.url_regexp.findall(data):
-                                    url = url[0]
-                                    if not url.startswith('http'):
-                                        url = 'http://'+url
-                                    if not any(bl.match(url) for bl in self.blacklist):
-                                        Sender(self, to, url, self.last_message).start()
-                                        self.last_message = (
-                                            max(time.time(), self.last_message) + self.message_delay
-                                        )
+                                    for url in self.url_regexp.findall(data):
+                                        url = url[0]
+                                        if not url.startswith('http'):
+                                            url = 'http://'+url
+                                        if not any(bl.match(url) for bl in self.blacklist):
+                                            Sender(self, to, url, self.last_message).start()
+                                            self.last_message = (
+                                                max(
+                                                    time.time(),
+                                                    self.last_message
+                                                ) + self.message_delay
+                                            )
 
                         if connected:
                             if nick_bool and time.time() > nick_next:
