@@ -20,6 +20,7 @@ import os
 import sys
 import datetime
 import ssl
+import contextlib
 
 
 html_pattern = re.compile("&(\w+?);")
@@ -71,32 +72,64 @@ class Sender(object):
         while time.time() < self.at_time:
             time.sleep(1)
         myprint("process %r" % self.url)
+        # initialize the title variable
+        title = None
         try:
-            request = urllib2.urlopen(self.url)
-            if "Content-Type" in request.headers and "charset=" in request.headers["Content-Type"]:
-                charset = request.headers["Content-Type"].split("charset=")[1].split(";")[0].strip()
-                soup = BeautifulSoup(
-                    request.read(self.urlbot.max_page_size).decode(charset, errors="ignore")
-                )
-            else:
-                soup = BeautifulSoup(request.read(self.urlbot.max_page_size))
+            # make sure we close the urlopen
+            with contextlib.closing(urllib2.urlopen(self.url)) as request:
+                # only try to fetch title if the url point to text/html
+                if request.headers.get("Content-Type", "").startswith("text/html"):
+                    if "charset=" in request.headers["Content-Type"]:
+                        charset = request.headers["Content-Type"].split(
+                            "charset="
+                        )[1].split(";")[0].strip()
+                        soup = BeautifulSoup(
+                            request.read(self.urlbot.max_page_size).decode(charset, errors="ignore")
+                        )
+                    else:
+                        soup = BeautifulSoup(request.read(self.urlbot.max_page_size))
+                    if len(soup.title.string) > self.urlbot.title_length:
+                        title = soup.title.string[0:self.urlbot.title_length] + u'…'
+                    else:
+                        title = soup.title.string
         except urllib2.HTTPError as e:
             sys.stderr.write("HTTPError when fetching %s : %s\n" % (e.url, e))
             return
-        if not soup.title:
-            return
-        if len(soup.title.string) > self.urlbot.title_length:
-            title = soup.title.string[0:self.urlbot.title_length] + u'…'
-        else:
-            title = soup.title.string
-        self.urlbot.say(self.to, html_entity_decode(title.replace('\n', ' ').strip()))
+        # if title is not set and fallback_notitle is True
+        if not title and self.urlbot.fallback_notitle:
+            title = []
+            # add type and format info
+            if "Content-Type" in request.headers:
+                try:
+                    (typ, forma) = request.headers['Content-type'].split(";", 1)[0].split("/", 1)
+                    title.append("Type: %s, Format: %s" % (typ, forma))
+                except ValueError:
+                    pass
+            # add size info
+            if "Content-Length" in request.headers:
+                try:
+                    length = int(request.headers["Content-Length"])
+                    suffixs = ["B", "KB", "MB", "GB", "TB", "PB"]
+                    for suffix in suffixs:
+                        if length > 1024.0 * 4 / 3:
+                            length = length / 1024.0
+                        else:
+                            break
+                    length = round(length, 2)
+                    title.append("Size: %.2f%s" % (length, suffix))
+                except ValueError:
+                    pass
+            title = ", ".join(title)
+        # only return title if defined and not empty
+        if title:
+            self.urlbot.say(self.to, html_entity_decode(title.replace('\n', ' ').strip()))
 
 
 class UrlBot(object):
     def __init__(
       self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576,
       irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None,
-      ignore=None, cafile=None, tls=False
+      ignore=None, cafile=None, tls=False, fallback_notitle=True
     ):
         self.chans = chans
         self.nick = nick
@@ -121,6 +154,7 @@ class UrlBot(object):
             self.ignore = []
         else:
             self.ignore = [re.compile(bl) for bl in ignore]
+        self.fallback_notitle = fallback_notitle
 
         self.url_regexp = re.compile(
             """((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/"""

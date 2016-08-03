@@ -26,4 +26,7 @@ params = {
 # A list of regular expressions. Urlbot will ignore users matching any. Users are of the form
 # nick!username@host. regexpr special chars need to be escaped using \\.
 #'ignore':[".*@cransiam\\.24i\\.fioc3c\\.IP", "root!.*"],
+# If link do not point the html, or html page have no title, print anyway some infos
+# (type, format, size).
+#'fallback_notitle': True,
 }
