@@ -29,4 +29,8 @@ params = {
 # If link do not point the html, or html page have no title, print anyway some infos
 # (type, format, size).
 #'fallback_notitle': True,
+
+# A dictionnary of headers to transmit then fetching urls. For instance, you can use it to
+# tweak the language used in responses or the user agent used.
+#'request_headers' : {"Accept-Language": "en-US,en;q=0.5,*;q=0.3"},
 }

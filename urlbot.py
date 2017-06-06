@@ -76,7 +76,8 @@ class Sender(object):
         title = None
         try:
             # make sure we close the urlopen
-            with contextlib.closing(urllib2.urlopen(self.url)) as request:
+            request = urllib2.Request(self.url, headers=self.urlbot.request_headers)
+            with contextlib.closing(urllib2.urlopen(request)) as request:
                 # only try to fetch title if the url point to text/html
                 if request.headers.get("Content-Type", "").startswith("text/html"):
                     if "charset=" in request.headers["Content-Type"]:
@@ -129,7 +130,7 @@ class UrlBot(object):
     def __init__(
       self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576,
       irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None,
-      ignore=None, cafile=None, tls=False, fallback_notitle=True
+      ignore=None, cafile=None, tls=False, fallback_notitle=True, request_headers=None
     ):
         self.chans = chans
         self.nick = nick
@@ -155,6 +156,10 @@ class UrlBot(object):
         else:
             self.ignore = [re.compile(bl) for bl in ignore]
         self.fallback_notitle = fallback_notitle
+        if request_headers is None:
+            self.request_headers = {"Accept-Language": "en-US,en;q=0.5,*;q=0.3"}
+        else:
+            self.request_headers = request_headers
 
         self.url_regexp = re.compile(
             """((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/"""
