@@ -130,7 +130,8 @@ class UrlBot(object):
     def __init__(
       self, network, chans, nick, port=6667, debug=0, title_length=300, max_page_size=1048576,
       irc_timeout=360.0, message_delay=3, charset='utf-8', nickserv_pass=None, blacklist=None,
-      ignore=None, cafile=None, tls=False, fallback_notitle=True, request_headers=None
+      ignore=None, cafile=None, tls=False, fallback_notitle=True, request_headers=None,
+      on_connect_commands=None
     ):
         self.chans = chans
         self.nick = nick
@@ -160,6 +161,15 @@ class UrlBot(object):
             self.request_headers = {"Accept-Language": "en-US,en;q=0.5,*;q=0.3"}
         else:
             self.request_headers = request_headers
+        self.on_connect_commands = []
+        if on_connect_commands is not None:
+            for command in on_connect_commands:
+                command = command.split(' ', 2)
+                if len(command) == 3:
+                    if command[0] == "/msg":
+                        self.on_connect_commands.append((self.say, command[1:]))
+                    elif command[0] == "/notice":
+                        self.on_connect_commands.append((self.notice, command[1:]))
 
         self.url_regexp = re.compile(
             """((?:[a-z][\\w-]+:(?:/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/"""
@@ -204,6 +214,8 @@ class UrlBot(object):
                             if nickserv_pass:
                                 self.say(u'nickserv', u'IDENTIFY %s' % nickserv_pass)
                                 time.sleep(0.5)
+                            for command, args in self.on_connect_commands:
+                                command(*args)
                             for chan in self.chans:
                                 myprint(u"Join %r" % chan)
                                 self.send(u'JOIN %s' % chan)

@@ -7,6 +7,9 @@ params = {
 'nick':"urlbot",
 #'irc_timeout':360.0,
 #'nickserv_pass':None,
+# A list of "/msg nick msg" or "/notice nick msg" to send after the connection to the server
+# but before joining channels
+#'on_connect_commands': [],
 'tls': False, # set to True to enable TLS
 # Path to a CA certificate to be trusted. If set to None or commented, the system’s trusted CA
 # certificates will be used.
